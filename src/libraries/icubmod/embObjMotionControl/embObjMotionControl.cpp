@@ -3199,6 +3199,66 @@ bool embObjMotionControl::getJointDeadZoneRaw(int j, double &jntDeadZone)
     return true;
 }
 
+bool embObjMotionControl::setPidSlopeTimeRaw(const PidControlTypeEnum& pidtype, int j, const int time_ms)
+{
+    eOprotID32_t protid1;
+    if      (pidtype == VOCAB_PIDTYPE_POSITION) { protid1 = eoprot_ID_get(eoprot_endpoint_motioncontrol, eoprot_entity_mc_joint, j, eoprot_tag_mc_joint_config_pidposition); }
+    else if (pidtype == VOCAB_PIDTYPE_TORQUE)   { protid1 = eoprot_ID_get(eoprot_endpoint_motioncontrol, eoprot_entity_mc_joint, j, eoprot_tag_mc_joint_config_pidtorque); }
+    else
+    {
+        yError() << "getPidSlopeTimeRaw(): invalid pidtype";
+        return false;
+    }
+   
+    uint16_t size;
+    eOmc_PID_t eoPID = { 0 };
+    if (!askRemoteValue(protid1, &eoPID, size))
+    {
+        yError() << "setPidSlopeTimeRaw() " << getBoardInfo() << " joint " << j;
+        return false;
+    }
+
+    eoPID.slope_time_ms = time_ms;
+
+    eOprotID32_t protid2;
+    if      (pidtype == VOCAB_PIDTYPE_POSITION) { protid2 = eoprot_ID_get(eoprot_endpoint_motioncontrol, eoprot_entity_mc_joint, j, eoprot_tag_mc_joint_config_pidposition); }
+    else if (pidtype == VOCAB_PIDTYPE_TORQUE)   { protid2 = eoprot_ID_get(eoprot_endpoint_motioncontrol, eoprot_entity_mc_joint, j, eoprot_tag_mc_joint_config_pidtorque); }
+    else
+    {
+        yError() << "getPidSlopeTimeRaw(): invalid pidtype";
+        return false;
+    }
+
+    if (!res->setRemoteValue(protid2, &eoPID))
+    {
+        yError() << "setPidSlopeTimeRaw() " << getBoardInfo() << " joint " << j;
+        return false;
+    }
+    return true;
+}
+
+bool embObjMotionControl::getPidSlopeTimeRaw(const PidControlTypeEnum& pidtype, int j, int & time_ms)
+{
+    eOprotID32_t protid;
+    if      (pidtype == VOCAB_PIDTYPE_POSITION) {protid = eoprot_ID_get(eoprot_endpoint_motioncontrol, eoprot_entity_mc_joint, j, eoprot_tag_mc_joint_config_pidposition); }
+    else if (pidtype == VOCAB_PIDTYPE_TORQUE)   {protid = eoprot_ID_get(eoprot_endpoint_motioncontrol, eoprot_entity_mc_joint, j, eoprot_tag_mc_joint_config_pidtorque); }
+    else
+    {
+        yError() << "getPidSlopeTimeRaw(): invalid pidtype";
+        return false;
+    }
+    uint16_t size;
+    eOmc_PID_t eoPID = { 0 };
+    if (!askRemoteValue(protid, &eoPID, size))
+    {
+        yError() << "getPidSlopeTimeRaw() " << getBoardInfo() << " joint " << j;
+        return false;
+    }
+
+    time_ms = eoPID.slope_time_ms;
+    return true;
+}
+
 // IRemoteVariables
 bool embObjMotionControl::getRemoteVariableRaw(yarp::os::ConstString key, yarp::os::Bottle& val)
 {
@@ -3417,6 +3477,18 @@ bool embObjMotionControl::getRemoteVariableRaw(yarp::os::ConstString key, yarp::
         Bottle& r = val.addList(); for (int i = 0; i<_njoints; i++) { double tmp = 0; getJointDeadZoneRaw(i, tmp1);  r.addDouble(tmp1); }
         return true;
     }
+    else if (key == "posPidSlopeTime")
+    {
+        int tmp1;
+        Bottle& r = val.addList(); for (int i = 0; i<_njoints; i++) { double tmp = 0; getPidSlopeTimeRaw(VOCAB_PIDTYPE_POSITION, i, tmp1);  r.addInt(tmp1); }
+        return true;
+    }
+    else if (key == "trqPidSlopeTime")
+    {
+        int tmp1;
+        Bottle& r = val.addList(); for (int i = 0; i<_njoints; i++) { double tmp = 0; getPidSlopeTimeRaw(VOCAB_PIDTYPE_TORQUE, i, tmp1);  r.addInt(tmp1); }
+        return true;
+    }
     yWarning("getRemoteVariable(): Unknown variable %s", key.c_str());
     return false;
 }
@@ -3448,6 +3520,16 @@ bool embObjMotionControl::setRemoteVariableRaw(yarp::os::ConstString key, const 
     else if (key == "PWMLimit")
     {
         for (int i = 0; i < _njoints; i++) setPWMLimitRaw(i, val.get(i).asDouble());
+        return true;
+    }
+    else if (key == "posPidSlopeTime")
+    {
+        for (int i = 0; i < _njoints; i++) setPidSlopeTimeRaw(VOCAB_PIDTYPE_POSITION, i, val.get(i).asInt());
+        return true;
+    }
+    else if (key == "trqPidSlopeTime")
+    {
+        for (int i = 0; i < _njoints; i++) setPidSlopeTimeRaw(VOCAB_PIDTYPE_TORQUE, i, val.get(i).asInt());
         return true;
     }
     //disabled for used safety
@@ -3511,6 +3593,8 @@ bool embObjMotionControl::getRemoteVariablesListRaw(yarp::os::Bottle* listOfKeys
     listOfKeys->addString("jointEncTolerance");
     listOfKeys->addString("motorEncTolerance");
     listOfKeys->addString("jointDeadZone");
+    listOfKeys->addString("posPidSlopeTime");
+    listOfKeys->addString("trqPidSlopeTime");
     return true;
 }
 

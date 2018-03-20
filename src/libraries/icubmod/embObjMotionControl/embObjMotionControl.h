@@ -474,6 +474,8 @@ public:
     virtual bool getRotorIndexOffsetRaw(int j, double& rotorOffset);
     virtual bool getTorqueControlFilterType(int j, int& type);
     virtual bool getRotorLimitsRaw(int j, double *rotorMin, double *rotorMax);
+    virtual bool setPidSlopeTimeRaw(const PidControlTypeEnum& pidtype, int j, const int time_ms);
+    virtual bool getPidSlopeTimeRaw(const PidControlTypeEnum& pidtype, int j, int & time_ms);
 
     ////// Amplifier interface
     virtual bool enableAmpRaw(int j);
